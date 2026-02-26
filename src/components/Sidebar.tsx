@@ -1,12 +1,22 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useProjectStore } from '../store/useProjectStore';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar() {
   const location = useLocation();
   const { workspaces, activeWorkspaceId, setActiveWorkspace, addWorkspace, deleteWorkspace } = useProjectStore();
+  const { user, logout, organizations } = useAuth();
   const [isAddingWorkspace, setIsAddingWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
+
+  // Basic org switcher - can be enhanced later
+  // For now, we assume active org is handled via context or just first org
+  // But store.fetchData needs orgId.
+  // Let's add a local state or context for selectedOrgId?
+  // Ideally AuthContext manages selectedOrgId or we pass it down.
+  // We'll update Layout to handle org selection and pass currentOrgId if needed,
+  // but Sidebar mainly deals with workspaces within an org.
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -32,6 +42,28 @@ export default function Sidebar() {
             <p className="text-xs text-muted font-medium">Prism Flow OS v2.4</p>
           </div>
         </div>
+
+        {/* Organization Switcher (Simple) */}
+        {organizations.length > 1 && (
+             <div className="mb-4 px-1">
+                 <select
+                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50"
+                    onChange={(e) => {
+                        // Ideally trigger a context update or reload
+                        // For MVP: window.location.reload() or just a context setter passed down?
+                        // We will rely on Layout to provide the setter if we lift state up,
+                        // or AuthContext to store 'currentOrgId'.
+                        // Let's just show the count for now or list them if we want to be fancy.
+                        console.log("Switching orgs not fully wired in UI yet", e.target.value);
+                    }}
+                 >
+                     {organizations.map(org => (
+                         <option key={org.id} value={org.id}>{org.name}</option>
+                     ))}
+                 </select>
+             </div>
+        )}
+
         <button className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white h-10 rounded-full font-bold text-sm transition-colors shadow-sm mb-6">
           <span className="material-symbols-outlined text-[20px]">add</span>
           <span>New Item</span>
@@ -137,12 +169,20 @@ export default function Sidebar() {
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-border mt-auto">
         <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface cursor-pointer">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa9MMPJIVdMBHZUt_fKo9nMVfv6Us7ryUGIspT5EMV5QSMZnJhFFRQAe4PZfab9Wt8KWENTWhTyvLYzVPB6z-WTzvGIytnj9-ywyzlPR-R2r4CxVf4WMiyltAzAzpkb9HsR6I0sn3nJnbX7zzQa0sZ62IyLM9CUKFe4j6J1m20sylNcZKQsBa4tEhIwmeJ6x7y70hGgxLjn29Pgho-q5YHyZCbGFs8CJuKwdMlh8BEzd8c0LQVjXDX0_IP2ttkiCnCLR1LpYcVNE1n" alt="User avatar" className="w-8 h-8 rounded-full object-cover border border-border" />
+          {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="User avatar" className="w-8 h-8 rounded-full object-cover border border-border" />
+          ) : (
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                  {user?.name?.charAt(0) || 'U'}
+              </div>
+          )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-text-main truncate">Sarah Connor</p>
-            <p className="text-xs text-muted truncate">Engineering Lead</p>
+            <p className="text-sm font-medium text-text-main truncate">{user?.name}</p>
+            <p className="text-xs text-muted truncate">{user?.email}</p>
           </div>
-          <span className="material-symbols-outlined text-muted text-[20px]">settings</span>
+          <button onClick={logout} className="text-muted hover:text-error transition-colors">
+               <span className="material-symbols-outlined text-[20px]">logout</span>
+          </button>
         </div>
       </div>
     </aside>

@@ -3,10 +3,16 @@ export type Status = 'working' | 'stuck' | 'done' | 'backlog';
 export interface User {
   id: string;
   name: string;
-  avatarUrl: string;
-  role?: string; // 'Admin', 'Member', 'Viewer'
-  email?: string;
+  email: string;
+  avatarUrl?: string;
+  role?: string;
   status?: 'active' | 'inactive';
+}
+
+export interface Organization {
+    id: string;
+    name: string;
+    role: string; // User's role in this org
 }
 
 export interface Tag {
@@ -19,7 +25,7 @@ export interface Tag {
 export interface Task {
   id: string;
   title: string;
-  status: Status;
+  status: Status; // This might need to be string if we allow dynamic statuses from DB
   assignees: User[];
   date?: string;
   tags: Tag[];
@@ -29,7 +35,7 @@ export interface Task {
 }
 
 export interface Column {
-  id: Status;
+  id: Status; // or string
   title: string;
   colorClass: string; // e.g., 'bg-warning'
   items: Task[];
