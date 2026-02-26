@@ -2,6 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '../../types';
 import clsx from 'clsx';
+import { useProjectStore } from '../../store/useProjectStore';
 
 interface KanbanCardProps {
   task: Task;
@@ -9,6 +10,8 @@ interface KanbanCardProps {
 }
 
 export function KanbanCard({ task, isOverlay }: KanbanCardProps) {
+  const setSelectedTask = useProjectStore(state => state.setSelectedTask);
+
   const {
     attributes,
     listeners,
@@ -29,9 +32,16 @@ export function KanbanCard({ task, isOverlay }: KanbanCardProps) {
     transition,
   };
 
-  // When an item is being dragged, we want to hide the original item in the list
-  // but keep the space occupied (opacity 0 or visibility hidden)
-  // The DragOverlay will render the visible clone.
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent opening panel if dragging
+    if (isDragging) return;
+
+    // Prevent drag listeners from firing if we're clicking interactive elements inside
+    // For now, dragging is handled by listeners on the whole card, but we want click to work too.
+    // dnd-kit handles distinction between drag and click well usually.
+    setSelectedTask(task.id);
+  };
+
   if (isDragging) {
     return (
       <div
@@ -48,6 +58,7 @@ export function KanbanCard({ task, isOverlay }: KanbanCardProps) {
       style={style}
       {...attributes}
       {...listeners}
+      onClick={handleClick}
       className={clsx(
         "group bg-white rounded-lg border border-gray-200 shadow-cell hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing",
         task.status === 'done' && !isOverlay && "opacity-70 hover:opacity-100",

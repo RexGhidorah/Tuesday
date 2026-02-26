@@ -36,7 +36,7 @@ export default {
       }
     },
   },
-  plugins: [
+  plugins: [require("tailwindcss-animate"),
     forms,
     containerQueries,
   ],
