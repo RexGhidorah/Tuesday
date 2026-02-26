@@ -1,10 +1,12 @@
 import { useProjectStore } from "../store/useProjectStore";
 import { useEffect, useState } from "react";
 import type { Task, Status } from "../types";
+import { formatDistanceToNow, parseISO } from "date-fns";
 
 export default function TaskDetailPanel() {
-  const { columns, selectedTaskId, setSelectedTask, updateTask } = useProjectStore();
+  const { columns, selectedTaskId, setSelectedTask, updateTask, activities, currentUser, addActivity } = useProjectStore();
   const [localTask, setLocalTask] = useState<Task | null>(null);
+  const [commentText, setCommentText] = useState("");
 
   // Find the selected task from the store whenever ID changes
   useEffect(() => {
@@ -15,6 +17,9 @@ export default function TaskDetailPanel() {
     const task = columns.flatMap(col => col.items).find(t => t.id === selectedTaskId);
     setLocalTask(task || null);
   }, [selectedTaskId, columns]);
+
+  // Filter activities related to this task
+  const taskActivities = activities.filter(act => act.taskId === selectedTaskId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   if (!selectedTaskId || !localTask) return null;
 
@@ -27,6 +32,19 @@ export default function TaskDetailPanel() {
     setLocalTask({ ...localTask, [field]: value });
     // Update store
     updateTask(localTask.id, { [field]: value });
+  };
+
+  const handlePostComment = () => {
+    if (!commentText.trim() || !localTask) return;
+
+    addActivity({
+        type: 'comment',
+        user: currentUser,
+        taskId: localTask.id,
+        taskTitle: localTask.title,
+        details: commentText
+    });
+    setCommentText("");
   };
 
   const statusOptions: { value: Status; label: string; color: string }[] = [
@@ -123,7 +141,7 @@ export default function TaskDetailPanel() {
                 {localTask.assignees.map(user => (
                   <div key={user.id} className="relative group cursor-pointer">
                     <img
-                      src={user.avatarUrl}
+                      src={user.avatarUrl || 'https://via.placeholder.com/40'}
                       alt={user.name}
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                     />
@@ -147,29 +165,70 @@ export default function TaskDetailPanel() {
               rows={8}
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:bg-white focus:border-primary focus:ring-primary/20 transition-all resize-none"
               placeholder="Add a more detailed description..."
-              defaultValue="No description provided."
+              value={localTask.description || ''}
+              onChange={(e) => handleChange('description', e.target.value)}
             />
           </div>
 
-          {/* Activity Section (Placeholder) */}
+          {/* Activity Section */}
           <div className="pt-6 border-t border-gray-100 space-y-4">
              <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Activity Log</label>
-                <button className="text-xs font-bold text-primary hover:underline">View All</button>
              </div>
 
              <div className="flex gap-3">
-               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">You</div>
-               <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
+               <img src={currentUser.avatarUrl} className="w-8 h-8 rounded-full border border-gray-200" alt="You" />
+               <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
                  <textarea
                     rows={2}
                     className="w-full border-none p-0 text-sm focus:ring-0 resize-none placeholder-gray-400"
                     placeholder="Write an update..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                        if(e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handlePostComment();
+                        }
+                    }}
                  />
                  <div className="flex justify-end mt-2">
-                   <button className="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-primary-hover transition-colors">Post</button>
+                   <button
+                    onClick={handlePostComment}
+                    disabled={!commentText.trim()}
+                    className="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-primary-hover transition-colors disabled:opacity-50"
+                   >
+                    Post
+                   </button>
                  </div>
                </div>
+             </div>
+
+             {/* Task History Feed */}
+             <div className="space-y-4 mt-4">
+                {taskActivities.map(act => (
+                    <div key={act.id} className="flex gap-3 text-sm group">
+                        <img src={act.user.avatarUrl} className="w-8 h-8 rounded-full border border-gray-200" alt={act.user.name} />
+                        <div className="flex-1">
+                             <div className="flex items-baseline justify-between">
+                                <span className="font-bold text-text-main">{act.user.name}</span>
+                                <span className="text-xs text-text-muted">{formatDistanceToNow(parseISO(act.timestamp), { addSuffix: true })}</span>
+                             </div>
+
+                             {act.type === 'comment' && (
+                                <div className="mt-1 text-text-main bg-surface p-2 rounded-lg rounded-tl-none border border-border/50">
+                                    {act.details}
+                                </div>
+                             )}
+                             {act.type === 'status_change' && (
+                                <div className="mt-1 text-text-muted">
+                                    changed status to <span className="font-bold uppercase text-xs">{act.meta?.newStatus}</span>
+                                </div>
+                             )}
+                             {act.type === 'create_task' && <div className="mt-1 text-text-muted">created this task</div>}
+                        </div>
+                    </div>
+                ))}
              </div>
           </div>
 

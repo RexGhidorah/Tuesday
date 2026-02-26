@@ -4,6 +4,9 @@ export interface User {
   id: string;
   name: string;
   avatarUrl: string;
+  role?: string; // 'Admin', 'Member', 'Viewer'
+  email?: string;
+  status?: 'active' | 'inactive';
 }
 
 export interface Tag {
@@ -22,6 +25,7 @@ export interface Task {
   tags: Tag[];
   coverImage?: string;
   isOverdue?: boolean;
+  description?: string;
 }
 
 export interface Column {
@@ -36,4 +40,17 @@ export interface Workspace {
   name: string;
   color: string; // e.g., 'bg-primary'
   icon?: string; // Material symbol name
+}
+
+export type ActivityType = 'status_change' | 'comment' | 'create_task' | 'upload_file' | 'add_member' | 'mention';
+
+export interface Activity {
+  id: string;
+  type: ActivityType;
+  user: User;
+  taskId?: string; // If related to a task
+  taskTitle?: string; // Snapshot of task title
+  timestamp: string; // ISO string
+  details?: string; // For comments or extra info
+  meta?: any; // E.g., oldStatus, newStatus, fileName, etc.
 }

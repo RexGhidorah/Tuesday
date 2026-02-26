@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Column, Task, Status, Workspace } from '../types';
+import type { Column, Task, Status, Workspace, User, Activity } from '../types';
 
 interface ProjectState {
   columns: Column[];
   workspaces: Workspace[];
   activeWorkspaceId: string;
   selectedTaskId: string | null;
+  currentUser: User;
+  users: User[];
+  activities: Activity[];
 
   // Actions
   moveTask: (taskId: string, newStatus: Status) => void;
@@ -19,7 +22,18 @@ interface ProjectState {
   addWorkspace: (name: string, color: string) => void;
   deleteWorkspace: (id: string) => void;
   setActiveWorkspace: (id: string) => void;
+
+  // Activity Actions
+  addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
 }
+
+const initialUsers: User[] = [
+  { id: 'u0', name: 'Alex Rivera', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA424q6VgzDxL7UxKmYnaaUGZfRRQJhlU8ndVmU5wfRab5DgjIGjvyE6ATuKRTSKXPm0H4aqLy2PlSghmmZIfl7RKTf3Q8md_okVINDRlGrST4AXZLcFNuWjDrv3yEJT2fsfbQP9VQQBrTaICAHssprgs70S2IX6oOLTKU2LxKh3me1i7NhHRK4aDnhxukrkyHefaK88TulAx7DVrrZKTV6E8iZEwPKwVrVbZLueE4nTL5a7ECd2wSbnxN7_4JC7neQzmw2f8wfe7Tm', role: 'Admin', email: 'alex@tuesday.com', status: 'active' },
+  { id: 'u1', name: 'Sarah Chen', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC7KSYzJWKETBLM-_6BHOzusyoNO5mSFIyr-sEpIC6HBxoXS00yEiU7Udxn9gIwsxSp85kHNVkwSEOVcnOhBTiz9b6cW5tkH_8cnDBKvPcM6soORXvNM21atIbnig8BdK6T4Mgnt0wNrnKosl77SfneRwhhggF7eFgkSqOVorIXTryA2rvzKrO9K4-2ChD-48T6GBt_2aSwNy-ufDkaj7UcFyTVpTZZedJJBbdyJdstaccvJD6YkUmX0aic6zAvoO9HJnmnNh8uRVPI', role: 'Member', email: 'sarah@tuesday.com', status: 'active' },
+  { id: 'u2', name: 'Mike Ross', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB2P05KeogtoDnY8wCEqxmE8GnHX_ySvmw5ucvcvOAq5ghCSzWcNsBWHbc_0ADwU31mv9CT3J-UufVD_L2shN8vfjiXplEOFbFVUB0wMcmStOrh9fXsluDlM6VYU_dvOvf4MYwJa8eRFp250Rhxy5NclirgLmf9O4s7epcGzqvFXEARu2RSU16nCN-MVRwnwdlYB3CdNoMQzB_wXuCsoAXgeWLjejx_xvrhDhthpD3gWKsE82ktvQfEFgFpeAiMiWdUPQTZH7KppTFy', role: 'Viewer', email: 'mike@tuesday.com', status: 'active' },
+  { id: 'u3', name: 'Jessica Pearson', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD48kKf5hh2iEo46IXyQ0VAaH0meNbo7MERzbwBX9t3s6YI1QwHBQfbfuP9FiHeDSw6zdVXrTbOj3z-0HpUr46MGCNPtVE85_OR-FJpKe0yS9YtXb9wg3vAv8kRCmEXsY2umRPfM-5yCLp2CfxdVcUxof7uEgbRRXrXxk1ZT2mTAegUIn5Q_Y2LI8byLMQlf2pxI4OqYchr81ZJxPe9N8p5IXmzxvzPssbOgqc9EdqXDuLZrhAWZDbcWCKht21-CaNjYyXEwzmwz7NU', role: 'Admin', email: 'jessica@tuesday.com', status: 'active' },
+  { id: 'u4', name: 'Harvey Specter', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB00oOFrkkDvwcM5gjQfDV0vXGOZ0jRslz_1WbKEGLzAvYfInQjGBiogsee_cNJB-nwHGIcPrRlhyq5uGYF55o3P9_mEbIHLItGl0znqyupWRNx7Tsu4ZM1z5Y21nEUZuBFrZcWFSfTajHyNNWMELxrBVy2s46GabAB6ugdpTOdpeQf7u6NaqKmyg4u-zt8WcczIjbM-4g6Aabo2p9OE_Wb6PZQxgS4ApoLKgH1WF7aJlskckIk0oFdvsDLl0TYLFgS73nECmWfpsND', role: 'Member', email: 'harvey@tuesday.com', status: 'active' },
+];
 
 const initialTasks: Task[] = [
   // Working on it
@@ -29,7 +43,7 @@ const initialTasks: Task[] = [
     status: 'working',
     tags: [{ id: 't1', name: 'Design', color: 'bg-[#E5D4FF]', textColor: 'text-[#594EE6]' }],
     date: 'Today',
-    assignees: [{ id: 'u1', name: 'User 1', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBlUmVUvykiJbKXTcXyaJ0zC4NNfEJBHa9Wv_f4r-QIluLDhF08sGHg3WgbSoHDkJsAKGe5nRKid2OHNZQJRGDajoFMBEPGMZ_IBgd8ehPTXXVZZ-qrq6X7tWs_KTGLVJ4RPjQD7zl-KemzzWlEDSh55p5C5hc7C0S53y8rXntffWYHUO0mdIFoc3RGvruOcsgELZYG9u9VrpUXtWlEo2jBpgiOwnoJydH3Nm_Qh_7BKHii-eVtJbpxHxqqWUj2T8nzPfiDX-etxXK9' }],
+    assignees: [initialUsers[0]], // Alex
     coverImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDsXT-1AjGiaE2JqQ9akKlFdrabSyq0h0UIc0qmKRrfgaoZOID4KFatnWjVYkhR5MCm8iJNafsy4WtLgXdBvkeswHjznPrOFYGZmx8VbElFq7LuL3jV6v7Pib9bH1IySDJ42FGSmpmrq_UA517ZpXwObH547QyFSG2C92Q7aieJEQ-NFmSRtlvEnPDEbMVdw4ZNnNjRuF-7e6sjjnXLdoxbDXKTkkb6vdHzHQB-SPSXnVVIdklO4vPLLk_51SrKAQToVtq1Mblwy3rK'
   },
   {
@@ -38,10 +52,7 @@ const initialTasks: Task[] = [
     status: 'working',
     tags: [{ id: 't2', name: 'Dev', color: 'bg-[#E3F2FD]', textColor: 'text-[#1565C0]' }],
     date: 'Oct 24',
-    assignees: [
-      { id: 'u2', name: 'User 2', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCb2Y_PVJqENb_zCVNdXOP6gBsCPNWD6-gKuj7tmWzrL5Z-Cf7rlAQ_b-F6uZ_HJPBSB1c6pTCn_L8aQH-fb0iUGqVbbBm_sUvKXhF5Df8wdZtIWXa6gBC9AUF-YjrKRBZgYGZjFgVayJ1Az41OYTePUhMsPhn_OAOzqb07slDag8SI3rcUZsQUqtcwIVytBz6NNtNVr6pFt5L6BznzAjLuHNpbaeYdhZmpbm7FMgyUEG6NTHj9nZmXxOsDeKc7FIYyrb78HSzyfHle' },
-      { id: 'u3', name: 'User 3', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBzJ9pH2IJ79s2x45UnOhn9yG-_GsreQ9VJ-uCInYSsMoZXw8567nbFCJEOSCVRbzxdN73SyFNgwMStKC-wh7I1YqQPytvdkRsGEQY-AjJdYfJWUeW4lLOlrvRBki7tEyQSm5J0ppUY6kupg45yesF1UZP4-JQhmULr_XtQy8mskWjh_lOYipA4-9HOG4vstXw0EQSEGOLS4uHPZ_ZIUuaaqnRl09TAWmUf-vjagr4TtPKjTCcn65adElBC5XBAjtC9MpvgLmi_Qs1K' }
-    ]
+    assignees: [initialUsers[1], initialUsers[2]] // Sarah, Mike
   },
   {
     id: '3',
@@ -49,7 +60,7 @@ const initialTasks: Task[] = [
     status: 'working',
     tags: [{ id: 't3', name: 'Copy', color: 'bg-surface', textColor: 'text-muted' }],
     date: 'Oct 25',
-    assignees: [{ id: 'u4', name: 'User 4', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDR7kvL1shMtwtaluuCDeNKGK6ZXwuuQnphPO_MGdUwDreQ-2kwemk1u0OYuGR_i0KU0fSDD_ABMKwFdSVdvr7bOiq4S4cET0PRvhjiwPEwgHgoKw2crM-cmbgA3gs19kVMM9ks1fyJ3hOjVr89UH5rb5A06J0JPYoJirZqI-qP-pvpEQg-Yrf0i3jO1w1ja7YVZgEps545WnJtjAGKaqp2nG6Nu0bEvkKTsPoO7Xbd0swvVLi3HbNTdKurERsXG0iQt3oxW4tZ1cct' }]
+    assignees: [initialUsers[3]] // Jessica
   },
   // Stuck
   {
@@ -59,7 +70,7 @@ const initialTasks: Task[] = [
     tags: [{ id: 't2', name: 'Backend', color: 'bg-[#E3F2FD]', textColor: 'text-[#1565C0]' }],
     date: 'Overdue',
     isOverdue: true,
-    assignees: [{ id: 'u5', name: 'User 5', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAY8PB2Mx7qwVk2fsrYD5AOgVVsnw4tXz2prcmL9dZ3HBZJXvtmM2heE2B0qVyLEs1nJxFOBD799Jmz5EPcsK6AW9HFTDtE-QatIw3XFPlJEOe1znnu3_NXH-3tBoisA9rES_yqtDk1w-XZ11z1mOXY5z0QqnVy5cb9oMNp_O29jcCQDbKdsZujqiZLavAFCV-EdEInamAYF-Ajsbt8jeqkfC3ZeAieKMq9ZN2V1csY7mW-VCwNMd-83o-ses1_6F-E4KwDWHV68AvS' }]
+    assignees: [initialUsers[0], initialUsers[4]] // Alex, Harvey
   },
   // Done
   {
@@ -68,8 +79,7 @@ const initialTasks: Task[] = [
     status: 'done',
     tags: [{ id: 't4', name: 'Infra', color: 'bg-[#E3F2FD]', textColor: 'text-[#1565C0]' }],
     date: 'Oct 15',
-    assignees: [{ id: 'u6', name: 'User 6', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAOpoic3ei6KKHFukcKaTIj-RaqvQvP8uMC17SMssP21AVACjLyZZMX16g3TDBXRQpHwMmlKdzt8UBjpy1WF92wj0_roPhK_YHhTY8luZAyvkGSyZm_tBstTDZ-RbvzzdAPlsdIEhfqyDGGI_GrNhiXVSI2wabLOwOXpghbn2i-1cIapyzih6OZWEy4M9hCUsqNQpwXiIdvBFSXtcCaPzuzl29fW2Y8OHWcSeb6TR-eObyjhWN9IonogGla3RehtlgJi5W3YYKyIvI-' }],
-    coverImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEhGyG9Vk9XcdXkbzAGELqkNTz42fjo7Xi4x7q0lNwPLFAGmWesrDRHdtJPR3lGDmcA2ATKuhCgFKhxjGXNARtClr52eXzPN9IImmiRFGkjNDc0VZA6TAtDwYZG2-a1DqACjJEGuIVvlRnqELimqUFJO5PHRauv1CWM1RQshyMehVaXRGcDdXyC-tkKu7g7ll3hUWEJupLxGXdGpjByExV-SyRSJSjUfHBn76fXgmmIuzJwzFCA_0nDNaqnVsKlHZuItrOcbrXl7_X'
+    assignees: [initialUsers[1]] // Sarah
   },
   {
     id: '6',
@@ -77,7 +87,7 @@ const initialTasks: Task[] = [
     status: 'done',
     tags: [{ id: 't1', name: 'Design', color: 'bg-[#E5D4FF]', textColor: 'text-[#594EE6]' }],
     date: 'Oct 12',
-    assignees: [{ id: 'u7', name: 'User 7', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxzikj8xDfYkqunP3fzjU7h3eczI2h4M6F1GTgddxUv0DeycrDyRMsBJRthe7gS9QCB5MaHFMgO8UgnX10NIZ8FjcbZm2d022bYH16m4V4Xrviaip706shxbHwpxeu-P4WdB0qrhEsvRPbtZr65EIxUMVDfex3Mq5gfWkv2jwl9ksuzcVO1n2yernQgUnLWxlcTGTmjORHV90uLffNj4FdYofGA6hJQw7_9E5Yqjfkn3sS-xjm4kDykf1DyEk6B1KzPfWfkTny8_Un' }]
+    assignees: [initialUsers[2]] // Mike
   },
   // Backlog
   {
@@ -94,7 +104,7 @@ const initialTasks: Task[] = [
     status: 'backlog',
     tags: [{ id: 't6', name: 'Legal', color: 'bg-surface', textColor: 'text-muted' }],
     date: 'Nov 01',
-    assignees: [{ id: 'u8', name: 'User 8', avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNZMUIu_lO6Y9prtwSG9CpicDvVDCUosMRyXl4FYJwD-JCpORtLiehcZ5pvYS15Uq802KHhmB4V6lH7ZD71CcLR6K1bcZypjbc6dWljrPJQNH9xucYeJxwC9mv66W7ZvRWbt5hgRRbfVFlAK6E-kXExe5hjmCAovCQi8pXdrDdBFt01TYD6833rwp9O1DBmgBU2CxaZkAk_LwrsshN9SsTD9cu6wolQORbTesypfqInCvaGFZbOuDtTHWEqJ6DuRs2k_hUPfByVU7E' }]
+    assignees: [initialUsers[3]] // Jessica
   }
 ];
 
@@ -119,13 +129,71 @@ const populateColumns = (tasks: Task[], columns: Column[]): Column[] => {
   }));
 };
 
+const initialActivities: Activity[] = [
+  {
+    id: 'act-1',
+    type: 'status_change',
+    user: initialUsers[1], // Sarah
+    taskId: '5',
+    taskTitle: 'Setup Git Repository',
+    timestamp: new Date(new Date().setHours(10, 42)).toISOString(),
+    meta: { oldStatus: 'working', newStatus: 'done' }
+  },
+  {
+    id: 'act-2',
+    type: 'comment',
+    user: initialUsers[0], // Alex
+    taskId: '2',
+    taskTitle: 'Implement Auth0 Login Flow',
+    timestamp: new Date(new Date().setHours(9, 15)).toISOString(),
+    details: "We need to check the rate limits before merging the new endpoints. I'm seeing some 429 errors in staging."
+  },
+  {
+    id: 'act-3',
+    type: 'create_task',
+    user: { id: 'bot', name: 'Tuesday Bot', avatarUrl: '', role: 'Bot' } as User,
+    taskTitle: 'Q4 Budgeting',
+    timestamp: new Date(new Date().setHours(8, 0)).toISOString(),
+  },
+  {
+    id: 'act-4',
+    type: 'upload_file',
+    user: initialUsers[2], // Mike
+    taskId: '1',
+    taskTitle: 'Homepage Hero Interaction',
+    timestamp: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), // Yesterday
+    details: 'wireframes_v2.fig',
+  },
+  {
+    id: 'act-5',
+    type: 'mention',
+    user: initialUsers[3], // Jessica
+    taskId: '8',
+    taskTitle: 'Privacy Policy Update',
+    timestamp: new Date(new Date().setHours(14, 15)).toISOString(),
+    details: 'added Sarah Chen to the team'
+  },
+  {
+    id: 'act-6',
+    type: 'status_change',
+    user: initialUsers[4], // Harvey
+    taskId: '4',
+    taskTitle: 'API Response Latency Fix',
+    timestamp: new Date(new Date().setHours(11, 0)).toISOString(),
+    meta: { oldStatus: 'working', newStatus: 'stuck' }
+  }
+];
+
 export const useProjectStore = create<ProjectState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       columns: populateColumns(initialTasks, initialColumns),
       workspaces: initialWorkspaces,
       activeWorkspaceId: 'ws-main',
       selectedTaskId: null,
+      currentUser: initialUsers[0], // Alex Rivera is default
+      users: initialUsers,
+      activities: initialActivities,
 
       moveTask: (taskId, newStatus) => set((state) => {
         let taskToMove: Task | undefined;
@@ -159,7 +227,18 @@ export const useProjectStore = create<ProjectState>()(
           return col;
         });
 
-        return { columns: newColumns };
+        // Log Activity
+        const newActivity: Activity = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'status_change',
+          user: state.currentUser,
+          taskId: taskToMove.id,
+          taskTitle: taskToMove.title,
+          timestamp: new Date().toISOString(),
+          meta: { oldStatus: sourceColId, newStatus: newStatus }
+        };
+
+        return { columns: newColumns, activities: [newActivity, ...state.activities] };
       }),
 
       addTask: (status, task) => set((state) => {
@@ -169,7 +248,18 @@ export const useProjectStore = create<ProjectState>()(
           }
           return col;
         });
-        return { columns: newColumns };
+
+        // Log Activity
+        const newActivity: Activity = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'create_task',
+          user: state.currentUser,
+          taskId: task.id,
+          taskTitle: task.title,
+          timestamp: new Date().toISOString(),
+        };
+
+        return { columns: newColumns, activities: [newActivity, ...state.activities] };
       }),
 
       deleteTask: (taskId) => set((state) => {
@@ -193,6 +283,17 @@ export const useProjectStore = create<ProjectState>()(
            }
 
            if(currentTask && currentTask.status !== updates.status) {
+             // Log Activity for status change
+             const newActivity: Activity = {
+                id: Math.random().toString(36).substr(2, 9),
+                type: 'status_change',
+                user: state.currentUser,
+                taskId: currentTask.id,
+                taskTitle: currentTask.title,
+                timestamp: new Date().toISOString(),
+                meta: { oldStatus: currentTask.status, newStatus: updates.status }
+             };
+
              // Remove from old
              const colsAfterRemove = state.columns.map(c => ({
                 ...c,
@@ -205,7 +306,7 @@ export const useProjectStore = create<ProjectState>()(
                 }
                 return c;
              });
-             return { columns: colsAfterAdd };
+             return { columns: colsAfterAdd, activities: [newActivity, ...state.activities] };
            }
         }
 
@@ -237,7 +338,15 @@ export const useProjectStore = create<ProjectState>()(
         activeWorkspaceId: state.activeWorkspaceId === id ? state.workspaces[0].id : state.activeWorkspaceId
       })),
 
-      setActiveWorkspace: (id) => set({ activeWorkspaceId: id })
+      setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+
+      addActivity: (activity) => set((state) => ({
+        activities: [{
+            ...activity,
+            id: Math.random().toString(36).substr(2, 9),
+            timestamp: new Date().toISOString(),
+        }, ...state.activities]
+      }))
     }),
     {
       name: 'project-storage',
