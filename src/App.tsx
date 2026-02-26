@@ -7,6 +7,7 @@ import AdminSettings from './pages/AdminSettings';
 import ProjectKanban from './pages/ProjectKanban';
 import Dashboard from './pages/Dashboard';
 import ProjectGantt from './pages/ProjectGantt';
+import ProjectCalendar from './pages/ProjectCalendar';
 
 function App() {
   return (
@@ -14,8 +15,10 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<ProjectBoard />} />
+          <Route path="/board" element={<ProjectBoard />} />
           <Route path="/kanban" element={<ProjectKanban />} />
           <Route path="/gantt" element={<ProjectGantt />} />
+          <Route path="/calendar" element={<ProjectCalendar />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/activity" element={<ActivityLog />} />
 

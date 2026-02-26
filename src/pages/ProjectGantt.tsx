@@ -68,7 +68,7 @@ export default function ProjectGantt() {
               <span className="material-symbols-outlined text-[18px]">table_chart</span>
               Main Table
             </a>
-            <a href="/projects/kanban" className="px-4 py-2 text-sm font-medium text-text-muted hover:text-primary hover:bg-surface rounded-lg transition-colors flex items-center gap-2">
+            <a href="/kanban" className="px-4 py-2 text-sm font-medium text-text-muted hover:text-primary hover:bg-surface rounded-lg transition-colors flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">view_kanban</span>
               Kanban
             </a>
@@ -77,7 +77,7 @@ export default function ProjectGantt() {
               Gantt
               <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
             </a>
-            <a href="#" className="px-4 py-2 text-sm font-medium text-text-muted hover:text-primary hover:bg-surface rounded-lg transition-colors flex items-center gap-2">
+            <a href="/calendar" className="px-4 py-2 text-sm font-medium text-text-muted hover:text-primary hover:bg-surface rounded-lg transition-colors flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">calendar_month</span>
               Calendar
             </a>

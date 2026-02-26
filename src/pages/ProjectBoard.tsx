@@ -100,7 +100,7 @@ export default function ProjectBoard() {
           <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary rounded-t-full"></div>
         </a>
         <a
-          href="#"
+          href="/kanban"
           className="py-3 text-sm font-medium text-muted hover:text-text-main flex items-center gap-2 transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">
@@ -109,7 +109,7 @@ export default function ProjectBoard() {
           Kanban
         </a>
         <a
-          href="#"
+          href="/gantt"
           className="py-3 text-sm font-medium text-muted hover:text-text-main flex items-center gap-2 transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">
@@ -118,13 +118,13 @@ export default function ProjectBoard() {
           Gantt
         </a>
         <a
-          href="#"
+          href="/calendar"
           className="py-3 text-sm font-medium text-muted hover:text-text-main flex items-center gap-2 transition-colors"
         >
           <span className="material-symbols-outlined text-[20px]">
-            timeline
+            calendar_month
           </span>
-          Timeline
+          Calendar
         </a>
         <a
           href="#"
