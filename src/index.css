@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-body text-text-main bg-surface antialiased;
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar for horizontal scrolling tables */
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+  }
+  .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+  }
+}
+
+/* Prism Flow specific styles */
+.status-cell {
+    transition: transform 0.1s ease, filter 0.1s ease;
+}
+.status-cell:hover {
+    transform: scale(1.02);
+    filter: brightness(1.05);
+}
+
+.group-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Checkbox custom style */
+.custom-checkbox:checked {
+    background-color: #594EE6;
+    border-color: #594EE6;
+}
+
+/* Material Symbols font settings */
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
+
+/* Custom Scrollbar for the Gantt Chart */
+.gantt-scroll::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+.gantt-scroll::-webkit-scrollbar-track {
+    background: #F5F6F8;
+    border-radius: 5px;
+}
+.gantt-scroll::-webkit-scrollbar-thumb {
+    background: #D0D4E4;
+    border-radius: 5px;
+}
+.gantt-scroll::-webkit-scrollbar-thumb:hover {
+    background: #676879;
+}
+/* Hide scrollbar for vertical sync but allow functionality */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
