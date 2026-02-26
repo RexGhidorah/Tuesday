@@ -7,7 +7,7 @@ interface ProjectTableRowProps {
 }
 
 export function ProjectTableRow({ task }: ProjectTableRowProps) {
-  const { moveTask } = useProjectStore();
+  const { setSelectedTask } = useProjectStore();
 
   const getStatusColor = (status: Status) => {
     switch (status) {
@@ -39,15 +39,22 @@ export function ProjectTableRow({ task }: ProjectTableRowProps) {
     }
   };
 
-  const handleStatusClick = () => {
-    // Cycle statuses for demo: working -> done -> stuck -> backlog -> working
-    const statuses: Status[] = ['working', 'done', 'stuck', 'backlog'];
-    const nextIndex = (statuses.indexOf(task.status) + 1) % statuses.length;
-    moveTask(task.id, statuses[nextIndex]);
+  const handleRowClick = () => {
+    setSelectedTask(task.id);
+  };
+
+  const handleStatusClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't open detail panel when clicking status
+    // Logic moved to detail panel mostly, but keeping quick toggle could be nice
+    // For now, let's just open the panel to edit status properly
+    setSelectedTask(task.id);
   };
 
   return (
-    <div className="group flex items-center border-b border-border/50 hover:bg-surface/50 transition-colors">
+    <div
+      onClick={handleRowClick}
+      className="group flex items-center border-b border-border/50 hover:bg-surface/50 transition-colors cursor-pointer"
+    >
       {/* Drag Handle */}
       <div className="w-10 p-2 flex items-center justify-center border-r border-border/50 bg-white group-hover:bg-surface/50 sticky left-0 z-10">
         <span className="material-symbols-outlined text-muted/30 cursor-move opacity-0 group-hover:opacity-100 text-[18px]">

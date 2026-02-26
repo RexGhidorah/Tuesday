@@ -8,6 +8,9 @@ interface ProjectState {
   addTask: (status: Status, task: Task) => void;
   deleteTask: (taskId: string) => void;
   setColumns: (columns: Column[]) => void;
+  selectedTaskId: string | null;
+  setSelectedTask: (taskId: string | null) => void;
+  updateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
 const initialTasks: Task[] = [
@@ -169,6 +172,42 @@ export const useProjectStore = create<ProjectState>()(
   }),
 
   setColumns: (columns) => set({ columns }),
+  selectedTaskId: null,
+  setSelectedTask: (taskId) => set({ selectedTaskId: taskId }),
+  updateTask: (taskId, updates) => set((state) => {
+    const newColumns = state.columns.map(col => ({
+      ...col,
+      items: col.items.map(task =>
+        task.id === taskId ? { ...task, ...updates } : task
+      )
+    }));
+    // If status changed, we need to move the task (handle column change logic)
+    // For simplicity, let's just update properties in place.
+    // Moving logic is separate in moveTask but we could combine.
+    // However, if status changes, the task should physically move columns.
+    if (updates.status) {
+       // This is complex because we need to remove from old col and add to new.
+       // Let's defer to moveTask logic if status changes, or handle it here.
+       // Re-using moveTask logic inside updateTask:
+       const task = state.columns.flatMap(c => c.items).find(t => t.id === taskId);
+       if (task && task.status !== updates.status) {
+         // Remove from old
+         const colsAfterRemove = newColumns.map(c => ({
+            ...c,
+            items: c.items.filter(t => t.id !== taskId)
+         }));
+         // Add to new
+         const colsAfterAdd = colsAfterRemove.map(c => {
+            if (c.id === updates.status) {
+                return { ...c, items: [...c.items, { ...task, ...updates }] };
+            }
+            return c;
+         });
+         return { columns: colsAfterAdd };
+       }
+    }
+    return { columns: newColumns };
+  }),
 }),
 {
   name: 'project-storage',
