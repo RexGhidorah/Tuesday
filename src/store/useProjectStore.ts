@@ -1,16 +1,24 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Column, Task, Status } from '../types';
+import type { Column, Task, Status, Workspace } from '../types';
 
 interface ProjectState {
   columns: Column[];
+  workspaces: Workspace[];
+  activeWorkspaceId: string;
+  selectedTaskId: string | null;
+
+  // Actions
   moveTask: (taskId: string, newStatus: Status) => void;
   addTask: (status: Status, task: Task) => void;
   deleteTask: (taskId: string) => void;
-  setColumns: (columns: Column[]) => void;
-  selectedTaskId: string | null;
-  setSelectedTask: (taskId: string | null) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
+  setSelectedTask: (taskId: string | null) => void;
+
+  // Workspace Actions
+  addWorkspace: (name: string, color: string) => void;
+  deleteWorkspace: (id: string) => void;
+  setActiveWorkspace: (id: string) => void;
 }
 
 const initialTasks: Task[] = [
@@ -97,7 +105,13 @@ const initialColumns: Column[] = [
   { id: 'backlog', title: 'Backlog', colorClass: 'bg-info', items: [] },
 ];
 
-// Helper to populate columns from tasks
+const initialWorkspaces: Workspace[] = [
+  { id: 'ws-main', name: 'Main Table', color: 'bg-primary', icon: 'table_chart' },
+  { id: 'ws-kanban', name: 'Kanban', color: 'bg-surface', icon: 'view_kanban' },
+  { id: 'ws-gantt', name: 'Gantt', color: 'bg-surface', icon: 'waterfall_chart' },
+  { id: 'ws-calendar', name: 'Calendar', color: 'bg-surface', icon: 'calendar_month' },
+];
+
 const populateColumns = (tasks: Task[], columns: Column[]): Column[] => {
   return columns.map(col => ({
     ...col,
@@ -109,108 +123,124 @@ export const useProjectStore = create<ProjectState>()(
   persist(
     (set) => ({
       columns: populateColumns(initialTasks, initialColumns),
+      workspaces: initialWorkspaces,
+      activeWorkspaceId: 'ws-main',
+      selectedTaskId: null,
 
       moveTask: (taskId, newStatus) => set((state) => {
-    // 1. Find the task and source column
-    let taskToMove: Task | undefined;
-    let sourceColId: Status | undefined;
+        let taskToMove: Task | undefined;
+        let sourceColId: Status | undefined;
 
-    for (const col of state.columns) {
-      const task = col.items.find(t => t.id === taskId);
-      if (task) {
-        taskToMove = task;
-        sourceColId = col.id;
-        break;
-      }
-    }
+        for (const col of state.columns) {
+          const task = col.items.find(t => t.id === taskId);
+          if (task) {
+            taskToMove = task;
+            sourceColId = col.id;
+            break;
+          }
+        }
 
-    if (!taskToMove || !sourceColId) return {}; // Task not found
+        if (!taskToMove || !sourceColId) return {};
+        if (sourceColId === newStatus) return {};
 
-    if (sourceColId === newStatus) return {}; // No change needed
+        const newColumns = state.columns.map(col => {
+          if (col.id === sourceColId) {
+            return {
+              ...col,
+              items: col.items.filter(t => t.id !== taskId)
+            };
+          }
+          if (col.id === newStatus) {
+            return {
+              ...col,
+              items: [...col.items, { ...taskToMove!, status: newStatus }]
+            };
+          }
+          return col;
+        });
 
-    // 2. Map columns to create new state (immutable update)
-    const newColumns = state.columns.map(col => {
-      // If this is the source column, remove the task
-      if (col.id === sourceColId) {
-        return {
+        return { columns: newColumns };
+      }),
+
+      addTask: (status, task) => set((state) => {
+        const newColumns = state.columns.map(col => {
+          if (col.id === status) {
+            return { ...col, items: [...col.items, task] };
+          }
+          return col;
+        });
+        return { columns: newColumns };
+      }),
+
+      deleteTask: (taskId) => set((state) => {
+        const newColumns = state.columns.map(col => ({
           ...col,
           items: col.items.filter(t => t.id !== taskId)
-        };
-      }
+        }));
+        return { columns: newColumns };
+      }),
 
-      // If this is the destination column, add the task
-      if (col.id === newStatus) {
-        return {
+      setSelectedTask: (taskId) => set({ selectedTaskId: taskId }),
+
+      updateTask: (taskId, updates) => set((state) => {
+        // First check if status changed, if so we need to use move logic roughly
+        if (updates.status) {
+           // Find task
+           let currentTask: Task | undefined;
+           for(const col of state.columns) {
+             const found = col.items.find(t => t.id === taskId);
+             if(found) { currentTask = found; break; }
+           }
+
+           if(currentTask && currentTask.status !== updates.status) {
+             // Remove from old
+             const colsAfterRemove = state.columns.map(c => ({
+                ...c,
+                items: c.items.filter(t => t.id !== taskId)
+             }));
+             // Add to new with updates
+             const colsAfterAdd = colsAfterRemove.map(c => {
+                if (c.id === updates.status) {
+                    return { ...c, items: [...c.items, { ...currentTask!, ...updates }] };
+                }
+                return c;
+             });
+             return { columns: colsAfterAdd };
+           }
+        }
+
+        // Just update in place
+        const newColumns = state.columns.map(col => ({
           ...col,
-          items: [...col.items, { ...taskToMove!, status: newStatus }]
-        };
-      }
+          items: col.items.map(task =>
+            task.id === taskId ? { ...task, ...updates } : task
+          )
+        }));
+        return { columns: newColumns };
+      }),
 
-      // Otherwise return as is
-      return col;
-    });
+      // Workspace Actions
+      addWorkspace: (name, color) => set((state) => ({
+        workspaces: [
+          ...state.workspaces,
+          {
+            id: Math.random().toString(36).substr(2, 9),
+            name,
+            color,
+            icon: 'table_chart'
+          }
+        ]
+      })),
 
-    return { columns: newColumns };
-  }),
+      deleteWorkspace: (id) => set((state) => ({
+        workspaces: state.workspaces.filter(w => w.id !== id),
+        activeWorkspaceId: state.activeWorkspaceId === id ? state.workspaces[0].id : state.activeWorkspaceId
+      })),
 
-  addTask: (status, task) => set((state) => {
-    const newColumns = state.columns.map(col => {
-      if (col.id === status) {
-        return { ...col, items: [...col.items, task] };
-      }
-      return col;
-    });
-    return { columns: newColumns };
-  }),
-
-  deleteTask: (taskId) => set((state) => {
-    const newColumns = state.columns.map(col => ({
-      ...col,
-      items: col.items.filter(t => t.id !== taskId)
-    }));
-    return { columns: newColumns };
-  }),
-
-  setColumns: (columns) => set({ columns }),
-  selectedTaskId: null,
-  setSelectedTask: (taskId) => set({ selectedTaskId: taskId }),
-  updateTask: (taskId, updates) => set((state) => {
-    const newColumns = state.columns.map(col => ({
-      ...col,
-      items: col.items.map(task =>
-        task.id === taskId ? { ...task, ...updates } : task
-      )
-    }));
-    // If status changed, we need to move the task (handle column change logic)
-    // For simplicity, let's just update properties in place.
-    // Moving logic is separate in moveTask but we could combine.
-    // However, if status changes, the task should physically move columns.
-    if (updates.status) {
-       // This is complex because we need to remove from old col and add to new.
-       // Let's defer to moveTask logic if status changes, or handle it here.
-       // Re-using moveTask logic inside updateTask:
-       const task = state.columns.flatMap(c => c.items).find(t => t.id === taskId);
-       if (task && task.status !== updates.status) {
-         // Remove from old
-         const colsAfterRemove = newColumns.map(c => ({
-            ...c,
-            items: c.items.filter(t => t.id !== taskId)
-         }));
-         // Add to new
-         const colsAfterAdd = colsAfterRemove.map(c => {
-            if (c.id === updates.status) {
-                return { ...c, items: [...c.items, { ...task, ...updates }] };
-            }
-            return c;
-         });
-         return { columns: colsAfterAdd };
-       }
+      setActiveWorkspace: (id) => set({ activeWorkspaceId: id })
+    }),
+    {
+      name: 'project-storage',
     }
-    return { columns: newColumns };
-  }),
-}),
-{
-  name: 'project-storage',
-}
-)
+  )
 );

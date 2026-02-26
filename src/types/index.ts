@@ -30,3 +30,10 @@ export interface Column {
   colorClass: string; // e.g., 'bg-warning'
   items: Task[];
 }
+
+export interface Workspace {
+  id: string;
+  name: string;
+  color: string; // e.g., 'bg-primary'
+  icon?: string; // Material symbol name
+}
