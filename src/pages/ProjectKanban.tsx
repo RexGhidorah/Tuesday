@@ -131,7 +131,7 @@ export default function ProjectKanban() {
         <div className="flex items-center justify-between mt-2">
           <div className="flex border-b border-transparent gap-6">
             <a
-              href="#"
+              href="/board"
               className="flex items-center gap-2 pb-3 border-b-2 border-transparent text-text-muted hover:text-text-main transition-colors group"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
@@ -149,7 +149,7 @@ export default function ProjectKanban() {
               <span className="text-sm font-bold">Kanban</span>
             </a>
             <a
-              href="#"
+              href="/gantt"
               className="flex items-center gap-2 pb-3 border-b-2 border-transparent text-text-muted hover:text-text-main transition-colors group"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
@@ -158,13 +158,13 @@ export default function ProjectKanban() {
               <span className="text-sm font-bold">Gantt</span>
             </a>
             <a
-              href="#"
+              href="/calendar"
               className="flex items-center gap-2 pb-3 border-b-2 border-transparent text-text-muted hover:text-text-main transition-colors group"
             >
               <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
                 calendar_month
               </span>
-              <span className="text-sm font-bold">Timeline</span>
+              <span className="text-sm font-bold">Calendar</span>
             </a>
           </div>
           <div className="flex items-center gap-2 pb-2">
