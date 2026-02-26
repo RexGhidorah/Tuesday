@@ -1,7 +1,7 @@
 import { useProjectStore } from "../store/useProjectStore";
 import { useMemo } from "react";
-import { formatDistanceToNow, isToday, isYesterday } from "date-fns";
-import type { Task, Activity } from "../types";
+import { formatDistanceToNow } from "date-fns";
+import type { Activity } from "../types";
 
 export default function Dashboard() {
   const { currentUser, columns, activities, setSelectedTask } = useProjectStore();
@@ -14,10 +14,11 @@ export default function Dashboard() {
 
   // "My Work" - Tasks assigned to currentUser
   const myTasks = useMemo(() => {
+    if (!currentUser) return [];
     return allTasks.filter(task =>
       task.assignees.some(u => u.id === currentUser.id)
     );
-  }, [allTasks, currentUser.id]);
+  }, [allTasks, currentUser]);
 
   // Group My Tasks by rough timeframe (mock logic for now, utilizing 'date' string)
   const myTasksToday = myTasks.filter(t => t.date === 'Today');
@@ -27,6 +28,7 @@ export default function Dashboard() {
 
   // "Inbox" - Activities where user is mentioned or related to their tasks
   const inboxActivities = useMemo(() => {
+     if (!currentUser) return [];
      return activities.filter(act => {
         // Show if mentioning user
         if (act.type === 'mention' && act.details?.includes(currentUser.name)) return true;
@@ -57,6 +59,10 @@ export default function Dashboard() {
         return 'recently';
     }
   };
+
+  if (!currentUser) {
+      return <div className="p-10">Loading profile...</div>;
+  }
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 lg:p-10">

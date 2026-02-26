@@ -35,13 +35,14 @@ export default function TaskDetailPanel() {
   };
 
   const handlePostComment = () => {
-    if (!commentText.trim() || !localTask) return;
+    if (!commentText.trim() || !localTask || !currentUser) return;
 
     addActivity({
         type: 'comment',
         user: currentUser,
         taskId: localTask.id,
         taskTitle: localTask.title,
+        timestamp: new Date().toISOString(),
         details: commentText
     });
     setCommentText("");
@@ -53,6 +54,8 @@ export default function TaskDetailPanel() {
     { value: 'done', label: 'Done', color: 'bg-success' },
     { value: 'backlog', label: 'Backlog', color: 'bg-info' },
   ];
+
+  if (!currentUser) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end pointer-events-none">
