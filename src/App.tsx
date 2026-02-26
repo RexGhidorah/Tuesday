@@ -8,6 +8,7 @@ import ProjectKanban from './pages/ProjectKanban';
 import Dashboard from './pages/Dashboard';
 import ProjectGantt from './pages/ProjectGantt';
 import ProjectCalendar from './pages/ProjectCalendar';
+import Workspaces from './pages/Workspaces'; // Added import
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/calendar" element={<ProjectCalendar />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/activity" element={<ActivityLog />} />
+          <Route path="/workspaces" element={<Workspaces />} /> {/* Added Route */}
 
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
